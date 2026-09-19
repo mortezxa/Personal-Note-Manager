@@ -5,35 +5,37 @@ from typing import List, Optional
 
 from note.decorators import handle_exceptions, log_execution
 from note.models import Note
+from datetime import datetime
 
 
 class NoteManager:
-    def __init__(self, storage_file: str = "notes.json"):
-        self.storage_file = Path(storage_file)
-        self.notes: List[Note] = []
-        self._load_notes()
+    def __init__(self, filepath: str = "notes.json"):
+        # تبدیل مسیر به یک آبجکت Path برای کارکرد راحت‌تر
+        self.filepath = Path(filepath)
+        self.notes = self._load_notes()
 
     @handle_exceptions
     @log_execution
-    def _load_notes(self) -> None:
-        if not self.storage_file.exists():
-            return
+    def _load_notes(self) -> List[Note]:
+        # اگر فایل وجود نداشت، لیست خالی برگردون
+        if not self.filepath.exists():
+            return []
 
-        with open(self.storage_file, "r") as file:
+        with open(self.filepath, "r") as file:
             data = json.load(file)
-
-            self.notes = [Note(**item) for item in data]
+            # تبدیل داده‌های دیکشنری به آبجکت‌های Note
+            return [Note(**item) for item in data]
 
     @handle_exceptions
     @log_execution
     def _save_notes(self) -> None:
-        with open(self.storage_file, "w") as file:
-
-            json.dump([asdict(note) for note in self.notes], file, indent=4)
+        # استفاده از self.filepath برای ذخیره‌سازی
+        with open(self.filepath, "w") as file:
+            json.dump([asdict(note) for note in self.notes], file, indent=4, default=str)
 
     @handle_exceptions
     @log_execution
-    def add_note(self, title: str, content: str) -> Note:
+    def create_note(self, title: str, content: str) -> Note:
         new_note = Note(title=title, content=content)
         self.notes.append(new_note)
         self._save_notes()
@@ -73,6 +75,10 @@ class NoteManager:
                 note.title = title
             if content is not None:
                 note.content = content
+            
+            note.last_modified_at = datetime.now()
+            
             self._save_notes()
             return True
         return False
+

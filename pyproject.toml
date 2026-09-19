@@ -1,5 +1,5 @@
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["test"]
 addopts = "-v --cov=note"
 
 [tool.coverage.run]
