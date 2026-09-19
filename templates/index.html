@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Note Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<div class="container py-5">
+    <h1 class="mb-4 text-primary fw-bold">📓 Personal Note Manager</h1>
+
+    <!-- فرم افزودن یادداشت -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title mb-3">افزودن یادداشت جدید</h5>
+            <form action="/notes/create" method="post">
+                <div class="mb-3">
+                    <input type="text" name="title" class="form-control" placeholder="عنوان یادداشت..." required>
+                </div>
+                <div class="mb-3">
+                    <textarea name="content" class="form-control" rows="3" placeholder="متن یادداشت..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">ثبت یادداشت</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- لیست یادداشت‌ها -->
+    <div class="row">
+        {% for note in notes %}
+        <div class="col-md-6 mb-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-dark">{{ note.title }}</h5>
+                    <p class="card-text">{{ note.content }}</p>
+                </div>
+                <div class="card-footer bg-white border-top-0 d-flex justify-content-between align-items-center">
+                    <small class="text-muted">آخرین تغییر: {{ note.last_modified_at.strftime('%Y-%m-%d %H:%M') if note.last_modified_at else '' }}</small>
+                    <form action="/notes/delete/{{ note.id }}" method="post" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('آیا از حذف مطمئن هستید؟')">حذف</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info">هیچ یادداشتی وجود ندارد! اولین یادداشت خود را ایجاد کنید.</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+</body>
+</html>
