@@ -1,5 +1,9 @@
 .venv/
 __pycache__/
-*.log
-notes.json
+*.pyc
 .pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+note_manager.log
+notes.json
