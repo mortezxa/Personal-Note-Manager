@@ -1,7 +1,7 @@
 import logging
 import sys
 
-logger = logging.getLogger("note_manager")
+logger = logging.getLogger("note")
 logger.setLevel(logging.INFO)
 
 if not logger.handlers:
@@ -9,7 +9,7 @@ if not logger.handlers:
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
 
-    file_handler = logging.FileHandler("note_manager.log")
+    file_handler = logging.FileHandler("note_manager.log", encoding="utf-8")
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 

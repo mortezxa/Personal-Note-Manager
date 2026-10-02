@@ -7,11 +7,3 @@ omit = [
     "note/__main__.py",
     "note/web_app.py",
 ]
-
-[tool.ruff]
-line-length = 88
-target-version = "py310"
-
-[tool.ruff.lint]
-select = ["E", "F", "I", "W"]
-ignore = []

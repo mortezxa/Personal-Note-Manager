@@ -1,52 +1,49 @@
-import os
 import json
-from dataclasses import asdict
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Optional
 from uuid import UUID
-from datetime import datetime
 
 from note.decorators import handle_exceptions, log_execution
+from note.logger import logger
 from note.models import Note
 
+
 class NoteManager:
-    def __init__(self, filepath: str = "notes.json"):
+    def __init__(self, filepath: str = "notes.json") -> None:
         self.filepath = Path(filepath)
-        self.notes = self._load_notes()
+        loaded = self._load_notes()
+        self.notes: list[Note] = loaded if loaded is not None else []
 
     @handle_exceptions
     @log_execution
-    def _load_notes(self) -> List[Note]:
-        if not os.path.exists(self.filepath):
+    def _load_notes(self) -> list[Note]:
+        if not self.filepath.exists():
             return []
 
-        with open(self.filepath, 'r', encoding='utf-8') as f:
+        with open(self.filepath, encoding="utf-8") as file:
             try:
-                data = json.load(f)
+                data = json.load(file)
             except json.JSONDecodeError:
+                logger.error(f"Invalid JSON format in {self.filepath}")
                 return []
 
-            loaded_notes = []
-            for item in data:
-                # تبدیل تاریخ‌های رشته‌ای به آبجکت datetime
-                if isinstance(item.get('created_at'), str):
-                    item['created_at'] = datetime.fromisoformat(item['created_at'])
-                if isinstance(item.get('last_modified_at'), str):
-                    item['last_modified_at'] = datetime.fromisoformat(item['last_modified_at'])
-                
-                # اطمینان از اینکه ID حتماً UUID است
-                if isinstance(item.get('id'), str):
-                    item['id'] = UUID(item['id'])
-                
-                loaded_notes.append(Note(**item))
-            return loaded_notes
+        if not isinstance(data, list):
+            return []
+
+        return [Note.from_dict(item) for item in data if isinstance(item, dict)]
 
     @handle_exceptions
     @log_execution
-    def _save_notes(self) -> None:
+    def _save_notes(self) -> bool:
         with open(self.filepath, "w", encoding="utf-8") as file:
-            # موقع ذخیره، UUID رو به رشته تبدیل کن تا JSON خراب نشه
-            json.dump([asdict(note) for note in self.notes], file, indent=4, default=str)
+            json.dump(
+                [note.to_dict() for note in self.notes],
+                file,
+                indent=4,
+                ensure_ascii=False,
+            )
+        logger.info(f"Successfully saved {len(self.notes)} notes to {self.filepath}")
+        return True
 
     @handle_exceptions
     @log_execution
@@ -54,43 +51,65 @@ class NoteManager:
         new_note = Note(title=title, content=content)
         self.notes.append(new_note)
         self._save_notes()
+        logger.info(f"Created new note: Note(id={new_note.id}, title='{title}')")
         return new_note
 
     @handle_exceptions
     @log_execution
-    def get_all_notes(self) -> List[Note]:
-        return self.notes
+    def get_all_notes(self) -> list[Note]:
+        return list(self.notes)
 
     @handle_exceptions
     @log_execution
-    def get_note_by_id(self, note_id: str) -> Optional[Note]:
-        # تبدیل رشته به UUID برای مقایسه دقیق
-        target_uuid = UUID(note_id)
+    def get_note_by_id(self, note_id: str | UUID) -> Note | None:
+        target_id = str(note_id).strip()
         for note in self.notes:
-            if note.id == target_uuid:
+            if str(note.id) == target_id:
                 return note
         return None
 
     @handle_exceptions
     @log_execution
-    def delete_note(self, note_id: str) -> bool:
+    def update_note(
+        self,
+        note_id: str | UUID,
+        title: str | None = None,
+        content: str | None = None,
+    ) -> bool:
         note = self.get_note_by_id(note_id)
-        if note:
-            self.notes.remove(note)
-            self._save_notes()
-            return True
-        return False
+        if not note:
+            return False
+
+        if title is not None and title.strip():
+            note.title = title
+        if content is not None and content.strip():
+            note.content = content
+        note.updated_at = datetime.now(timezone.utc)
+        self._save_notes()
+        logger.info(f"Updated note with ID: {note.id}")
+        return True
 
     @handle_exceptions
     @log_execution
-    def update_note(self, note_id: str, title: Optional[str] = None, content: Optional[str] = None) -> bool:
+    def delete_note(self, note_id: str | UUID) -> bool:
         note = self.get_note_by_id(note_id)
-        if note:
-            if title is not None:
-                note.title = title
-            if content is not None:
-                note.content = content
-            note.last_modified_at = datetime.now()
-            self._save_notes()
-            return True
-        return False
+        if not note:
+            return False
+
+        self.notes.remove(note)
+        self._save_notes()
+        logger.info(f"Deleted note with ID: {note.id}")
+        return True
+
+    @handle_exceptions
+    @log_execution
+    def search_notes(self, query: str) -> list[Note]:
+        cleaned_query = query.strip().lower()
+        if not cleaned_query:
+            return []
+        return [
+            note
+            for note in self.notes
+            if cleaned_query in note.title.lower()
+            or cleaned_query in note.content.lower()
+        ]

@@ -36,7 +36,7 @@
                     <p class="card-text">{{ note.content }}</p>
                 </div>
                 <div class="card-footer bg-white border-top-0 d-flex justify-content-between align-items-center">
-                    <small class="text-muted">آخرین تغییر: {{ note.last_modified_at.strftime('%Y-%m-%d %H:%M') if note.last_modified_at else '' }}</small>
+                    <small class="text-muted">آخرین تغییر: {{ note.updated_at.strftime('%Y-%m-%d %H:%M') if note.updated_at else '' }}</small>
                     <form action="/notes/delete/{{ note.id }}" method="post" style="display:inline;">
                         <a href="/notes/edit/{{ note.id }}" class="btn btn-sm btn-outline-primary me-2">ویرایش</a>
                         <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('آیا از حذف مطمئن هستید؟')">حذف</button>
